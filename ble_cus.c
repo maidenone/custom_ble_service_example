@@ -31,7 +31,7 @@ static void on_disconnect(ble_cus_t * p_cus, ble_evt_t const * p_ble_evt)
 {
     UNUSED_PARAMETER(p_ble_evt);
     p_cus->conn_handle = BLE_CONN_HANDLE_INVALID;
-    
+
     ble_cus_evt_t evt;
 
     evt.evt_type = BLE_CUS_EVT_DISCONNECTED;
@@ -47,19 +47,21 @@ static void on_disconnect(ble_cus_t * p_cus, ble_evt_t const * p_ble_evt)
 static void on_write(ble_cus_t * p_cus, ble_evt_t const * p_ble_evt)
 {
     ble_gatts_evt_write_t const * p_evt_write = &p_ble_evt->evt.gatts_evt.params.write;
-    
+
     // Custom Value Characteristic Written to.
     if (p_evt_write->handle == p_cus->custom_value_handles.value_handle)
     {
         nrf_gpio_pin_toggle(LED_4);
+
+        NRF_LOG_INFO("GOT WRITE ON: %d",*p_evt_write->data);
         /*
         if(*p_evt_write->data == 0x01)
         {
-            nrf_gpio_pin_clear(20); 
+            nrf_gpio_pin_clear(20);
         }
         else if(*p_evt_write->data == 0x02)
         {
-            nrf_gpio_pin_set(20); 
+            nrf_gpio_pin_set(20);
         }
         else
         {
@@ -96,13 +98,13 @@ static void on_write(ble_cus_t * p_cus, ble_evt_t const * p_ble_evt)
 void ble_cus_on_ble_evt( ble_evt_t const * p_ble_evt, void * p_context)
 {
     ble_cus_t * p_cus = (ble_cus_t *) p_context;
-    
-    NRF_LOG_INFO("BLE event received. Event type = %d\r\n", p_ble_evt->header.evt_id); 
+
+    NRF_LOG_INFO("BLE event received. Event type = %d\r\n", p_ble_evt->header.evt_id);
     if (p_cus == NULL || p_ble_evt == NULL)
     {
         return;
     }
-    
+
     switch (p_ble_evt->header.evt_id)
     {
         case BLE_GAP_EVT_CONNECTED:
@@ -149,7 +151,7 @@ static uint32_t custom_value_char_add(ble_cus_t * p_cus, const ble_cus_init_t * 
     //  Read  operation on cccd should be possible without authentication.
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.read_perm);
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.write_perm);
-    
+
     cccd_md.write_perm = p_cus_init->custom_value_char_attr_md.cccd_write_perm;
     cccd_md.vloc       = BLE_GATTS_VLOC_STACK;
 
@@ -157,13 +159,13 @@ static uint32_t custom_value_char_add(ble_cus_t * p_cus, const ble_cus_init_t * 
 
     char_md.char_props.read   = 1;
     char_md.char_props.write  = 1;
-    char_md.char_props.notify = 1; 
+    char_md.char_props.notify = 1;
     char_md.p_char_user_desc  = NULL;
     char_md.p_char_pf         = NULL;
     char_md.p_user_desc_md    = NULL;
-    char_md.p_cccd_md         = &cccd_md; 
+    char_md.p_cccd_md         = &cccd_md;
     char_md.p_sccd_md         = NULL;
-		
+
     ble_uuid.type = p_cus->uuid_type;
     ble_uuid.uuid = CUSTOM_VALUE_CHAR_UUID;
 
@@ -213,7 +215,7 @@ uint32_t ble_cus_init(ble_cus_t * p_cus, const ble_cus_init_t * p_cus_init)
     ble_uuid128_t base_uuid = {CUSTOM_SERVICE_UUID_BASE};
     err_code =  sd_ble_uuid_vs_add(&base_uuid, &p_cus->uuid_type);
     VERIFY_SUCCESS(err_code);
-    
+
     ble_uuid.type = p_cus->uuid_type;
     ble_uuid.uuid = CUSTOM_SERVICE_UUID;
 
@@ -230,7 +232,7 @@ uint32_t ble_cus_init(ble_cus_t * p_cus, const ble_cus_init_t * p_cus_init)
 
 uint32_t ble_cus_custom_value_update(ble_cus_t * p_cus, uint8_t custom_value)
 {
-    NRF_LOG_INFO("In ble_cus_custom_value_update. \r\n"); 
+    NRF_LOG_INFO("In ble_cus_custom_value_update. \r\n");
     if (p_cus == NULL)
     {
         return NRF_ERROR_NULL;
@@ -256,7 +258,7 @@ uint32_t ble_cus_custom_value_update(ble_cus_t * p_cus, uint8_t custom_value)
     }
 
     // Send value if connected and notifying.
-    if ((p_cus->conn_handle != BLE_CONN_HANDLE_INVALID)) 
+    if ((p_cus->conn_handle != BLE_CONN_HANDLE_INVALID))
     {
         ble_gatts_hvx_params_t hvx_params;
 
@@ -269,12 +271,12 @@ uint32_t ble_cus_custom_value_update(ble_cus_t * p_cus, uint8_t custom_value)
         hvx_params.p_data = gatts_value.p_value;
 
         err_code = sd_ble_gatts_hvx(p_cus->conn_handle, &hvx_params);
-        NRF_LOG_INFO("sd_ble_gatts_hvx result: %x. \r\n", err_code); 
+        NRF_LOG_INFO("sd_ble_gatts_hvx result: %x. \r\n", err_code);
     }
     else
     {
         err_code = NRF_ERROR_INVALID_STATE;
-        NRF_LOG_INFO("sd_ble_gatts_hvx result: NRF_ERROR_INVALID_STATE. \r\n"); 
+        NRF_LOG_INFO("sd_ble_gatts_hvx result: NRF_ERROR_INVALID_STATE. \r\n");
     }
 
 
